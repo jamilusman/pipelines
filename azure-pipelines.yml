@@ -9,9 +9,6 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-# variables:
-#   buildConfiguration: 'Release'
-
 steps:
 # Build project
 # Find any .csproj inside project directory and build
