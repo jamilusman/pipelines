@@ -1,21 +1,16 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/core/sdk:6.0 AS build
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-RUN dotnet restore "/pipelines.csproj"
-COPY . .
-WORKDIR "/src/"
-RUN dotnet build "pipelines.csproj" -c Release -o /app/build
+# copy csproj and restore as distinct layers
+COPY jenkins/*.csproj ./jenkins/
+RUN dotnet restore pipelines.csproj
 
-FROM build AS publish
-RUN dotnet publish "pipelines.csproj" -c Release -o /app/publish
+# copy everything else and build app
+COPY jenkins/. ./jenkins/
+WORKDIR /app/jenkins
+RUN dotnet publish -c Release -o out
 
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/core/aspnet:6.0 AS runtime
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/jenkins/out ./
 ENTRYPOINT ["dotnet", "pipelines.dll"]
